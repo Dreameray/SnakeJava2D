@@ -39,6 +39,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
     int velocityY;
     boolean gameOver = false;
     int highScore = 0;
+    int powerUpType = 0;
     
     SnakeGame(int boardWidth, int boardHeight){
         
@@ -55,6 +56,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
         food = new Tile(10, 10);
         random = new Random();
         placeFood();
+        
 
         velocityX = 0;
         velocityY = 0;
@@ -62,12 +64,12 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
 
         gameLoop = new Timer (100, this);
         gameLoop.start();
-        
 
     }
 
     public void startGame(){
         //Snake
+        gameLoop.setDelay(100);
         snakeHead = new Tile(5, 5);
         snakeBody.clear();
         velocityX  = 0;
@@ -80,9 +82,6 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
         else if(gameState == GameState.CLASSIC){
             placeFood();
         }
-
-        //Food
-        //food = new Tile(10, 10);
 
     }
 
@@ -107,26 +106,41 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
             System.out.println("Game State is Menu");
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 24));
-            g.drawString("Snake Game", boardWidth/2 -50, boardHeight/2 - 50);
+            g.drawString("Snake Game", boardWidth/2 -75, boardHeight/2 - 50);
             g.setFont(new Font("Arial", Font.PLAIN, 16));
-            g.drawString("Press 1 for Classic Mode", boardWidth / 2 -50, boardHeight / 2);
-            g.drawString("Press 2 for Power-Up Mode", boardWidth / 2 -50, boardHeight / 2 + 30);
+            g.drawString("Press 1 for Classic Mode", boardWidth / 2 -75, boardHeight / 2);
+            g.drawString("Press 2 for Power-Up Mode", boardWidth / 2 -75, boardHeight / 2 + 25);
         } else {
             //Food
-            g.setColor(Color.red);
-            //g.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
-            g.fill3DRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize, true);
-
+            switch (gameState) {
+                case CLASSIC:
+                    g.setColor(Color.RED);
+                    g.fill3DRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize, true);
+                    break;
+                case POWERUP:
+                    if(powerUpType == 0){
+                        g.setColor(Color.CYAN); // Different color for speed-up power-up
+                    } else if(powerUpType == 1) {
+                        g.setColor(Color.MAGENTA); // Different color for triple growth power-up
+                    } else {
+                        g.setColor(Color.YELLOW); // Default color for other power-ups
+                    }
+                    g.fill3DRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize, true);    
+                    break;
+                default:
+                    g.setColor(Color.RED);
+                    g.fill3DRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize, true);
+                    break;
+            }
+            
 
             //Snake Head
-            g.setColor(Color.green);
-            //g.fillRect(snakeHead.x * tileSize, snakeHead.y * tileSize, tileSize, tileSize);
+            g.setColor(Color.GREEN);
             g.fill3DRect(snakeHead.x * tileSize, snakeHead.y * tileSize, tileSize, tileSize,true);
 
             //Snake Body
             for(int i = 0; i<snakeBody.size(); i++){
                 Tile snakePart = snakeBody.get(i);
-                //g.fillRect(snakePart.x * tileSize, snakePart.y * tileSize, tileSize, tileSize);
                 g.fill3DRect(snakePart.x * tileSize, snakePart.y * tileSize, tileSize, tileSize, true);
             }
 
@@ -137,7 +151,8 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
                 g.setColor(Color.red);
                 g.drawString("Game Over: " + String.valueOf(snakeBody.size()), tileSize - 16, tileSize);
                 g.drawString( "Press SPACE BAR to Restart", tileSize - 16, tileSize + 20);
-            }else{
+                g.drawString( "Press ESCAPE to Return to Menu", tileSize - 16, tileSize + 40);
+            } else{
                 g.drawString("Score: " + String.valueOf(snakeBody.size()),tileSize - 16, tileSize);
 
             }
@@ -146,7 +161,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
             g.setColor(Color.WHITE);
             if(snakeBody.size()>highScore){
                 g.drawString("Highest Score: " + String.valueOf(snakeBody.size()), boardWidth - 150, tileSize);
-            }else{
+            } else{
                 g.drawString("Highest Score: " + highScore, boardWidth - 150, tileSize);
             }
             
@@ -166,7 +181,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
     public void move() {
         if (collision(snakeHead, food)) {
             if (gameState == GameState.POWERUP) {
-                int powerUpType = random.nextInt(3); // Random power-up type
+                powerUpType = random.nextInt(3); // Random power-up type
                 System.out.println("Power-Up Type: " + powerUpType);
                 
                 if (powerUpType == 0) {
@@ -185,12 +200,25 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
                     for (int i = 0; i < 3; i++) {
                         snakeBody.add(new Tile(food.x, food.y));
                     }
+                }else if (powerUpType == 2) {
+                    // Add extra tails (3 segments)
+                    System.out.println("Reductional!");
+                    //gamespeed set to normal
+                    gameLoop.setDelay(100);
+                    // Remove one segment from the snake
+                    if (!snakeBody.isEmpty()) {
+                        snakeBody.remove(snakeBody.size() - 1);
+                    }
+                } else {
+                    // Classic mode: just grow the snake by one segment
+                    snakeBody.add(new Tile(food.x, food.y));
                 }
+                placeFood();
             } else {
-                // Classic mode: just grow the snake by one segment
+
                 snakeBody.add(new Tile(food.x, food.y));
+                placeFood();
             }
-            placeFood();
         }
 
         // Snake body movement
@@ -221,6 +249,11 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
 
         if (snakeHead.x * tileSize < 0 || snakeHead.x * tileSize > boardWidth || 
             snakeHead.y * tileSize < 0 || snakeHead.y * tileSize > boardHeight) {
+            gameOver = true;
+        }
+
+        if (snakeHead.x < 0 || snakeHead.x >= boardWidth/tileSize || 
+            snakeHead.y < 0 || snakeHead.y >= boardHeight/tileSize) {
             gameOver = true;
         }
 
@@ -279,12 +312,15 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener{
                     gameOver = false;
                     gameLoop.start();
                 }
-           }
-        //    else if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
-        //        if(gameOver){
-        //             gameState = GameState.MENU;
-        //        }
-        //    }
+           }else if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
+                if(gameOver){
+                    snakeBody.clear();
+                    startGame();
+                    gameOver = false;
+                    gameLoop.start();
+                    gameState = GameState.MENU;
+                }
+           }  
         }
        
     }
